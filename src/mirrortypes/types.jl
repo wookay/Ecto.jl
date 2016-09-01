@@ -48,7 +48,7 @@ type MirrorStructError
 end
 
 function schema_to_mirrorstruct(modul::Module)::MirrorStruct
-    if isdefined(modul, :schema)
+    if isdefined(modul, :schema) && isdefined(Ecto.Schema, :__attributes__)
         naming = MirrorNaming(Val{:schema}, modul)
         ecotofields = Ecto.Schema.get_attribute(modul, :ecto_fields)
         fields = Vector{MirrorField}()
@@ -61,7 +61,7 @@ function schema_to_mirrorstruct(modul::Module)::MirrorStruct
         end
         MirrorStruct(naming, fields)
     else
-        throws(MirrorStructError(""))
+        throw(MirrorStructError(""))
     end
 end
 

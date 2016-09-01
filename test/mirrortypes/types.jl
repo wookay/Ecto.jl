@@ -1,12 +1,6 @@
-# plaintype, mirrortype, schema
-
-import Ecto.MirrorTypes: MirrorModel, MirrorField
-import Ecto.MirrorTypes: schema_to_mirrorstruct
-import Ecto.MirrorTypes: plain_to_mirrorstruct
-import Ecto.MirrorTypes: mirror_to_mirrorstruct
-import Ecto.MirrorTypes: mirrorstruct_to_schema
-import Ecto.MirrorTypes: mirrorstruct_to_plain
-import Ecto.MirrorTypes: mirrorstruct_to_mirror
+import Ecto.MirrorTypes: MirrorModel, MirrorField, MirrorStructError
+import Ecto.MirrorTypes: schema_to_mirrorstruct, plain_to_mirrorstruct, mirror_to_mirrorstruct
+import Ecto.MirrorTypes: mirrorstruct_to_schema, mirrorstruct_to_plain, mirrorstruct_to_mirror
 
 # plain
 type User
@@ -58,3 +52,5 @@ mirror = mirrorstruct_to_mirror(struct)
 
 plain = mirrorstruct_to_plain(struct)
 @test plain == getfield(Ecto.MirrorTypes, :User)
+
+@test_throws MirrorStructError schema_to_mirrorstruct(Base)

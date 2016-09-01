@@ -12,16 +12,16 @@ dump(typ::Type{Val{:integer}}, value::Int) = (:ok, value)
 dump{T<:Val}(typ::Type{T}, value::Any) = :error
 
 ## julia_type
+julia_type(typ::Type{Val{:id}}) = Int
+julia_type(typ::Type{Val{:integer}}) = Int
 julia_type(typ::Type{Val{:string}}) = String
 julia_type(typ::Type{Val{(:array, :integer)}}) = Vector{Int}
 julia_type(typ::Type{Val{(:array, :binary)}}) = Vector{String}
-julia_type(typ::Type{Val{:integer}}) = Int
-julia_type(typ::Type{Val{:id}}) = Int
 
 ## elixir_type
+elixir_type(typ::Type{Int}) = :integer
 elixir_type(typ::Type{String}) = :string
 elixir_type(typ::Type{Vector{Int}}) = (:array, :integer)
 elixir_type(typ::Type{Vector{String}}) = (:array, :binary)
-elixir_type(typ::Type{Int}) = :integer
 
 end # Ecto.Typ
