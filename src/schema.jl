@@ -4,6 +4,8 @@ module Schema
 
 export primary_key, schema, field
 
+include("assoc.jl")
+
 type Metadata
     state::Symbol # :built :loaded :deleted
     prefix::String # ""
@@ -13,9 +15,9 @@ end
 
 type t
     modul::Module
-    struct::Dict{Symbol,Any}
+    struct::Assoc
     metadata::Metadata
-    function t(modul::Module, struct::Dict{Symbol,Any})
+    function t(modul::Module, struct::Assoc)
         metadata = Metadata(:built, "", "source", nothing)
         new(modul, struct, metadata)
     end
@@ -135,10 +137,6 @@ function put_attribute(modul::Module, key::Symbol, obj::Any)
     push!(__attributes__[modul][key], obj)
 end
 
-function put_attribute(modul::Module, key::Symbol, kv::Tuple{Symbol,Any})
-    merge!(__attributes__[modul][key], Dict(Pair(kv...)))
-end
-
 function get_attribute(modul::Module, key::Symbol)
     __attributes__[modul][key]
 end
@@ -157,16 +155,16 @@ function __init_attributes__(modul::Module)
             :timestamps_opts => nothing,
             :derive => nothing,
             # attributes
-            :changeset_fields => Dict{Symbol,Any}(),
-            :struct_fields => Dict{Symbol,Any}(),
+            :changeset_fields => Vector{Tuple{Symbol,Any}}(),
+            :struct_fields => Vector{Tuple{Symbol,Any}}(),
             :ecto_primary_keys => Vector(),
-            :ecto_fields => Dict{Symbol,Any}(),
+            :ecto_fields => Vector{Tuple{Symbol,Any}}(),
             :ecto_assocs => Vector(),
             :ecto_embeds => Vector(),
             :ecto_raw => Vector(),
-            :ecto_autogenerate => Dict{Symbol,Any}(),
+            :ecto_autogenerate => Vector{Tuple{Symbol,Any}}(),
             :ecto_autoupdate => Vector(),
-            :ecto_autogenerate_id => Dict{Symbol,Any}()
+            :ecto_autogenerate_id => Vector{Tuple{Symbol,Any}}()
         )
     end
 end
@@ -176,8 +174,8 @@ end # module Ecto.Schema
 
 import Base: rem, |>
 
-function rem(modul::Module; kw...)::Schema.t
-    Schema.t(modul, Dict{Symbol,Any}(kw))
+function rem(modul::Module; vec...)::Schema.t
+    Schema.t(modul, Schema.Assoc(vec))
 end
 
 function |>(schema::Schema.t, func::Function; kw...)

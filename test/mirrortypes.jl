@@ -43,8 +43,8 @@ for (func, typ) in [(schema_to_mirrorstruct, UserSchema),
     @test :User == struct.naming.plain
     @test :_User == struct.naming.mirror
     @test :UserSchema == struct.naming.schema
-    @test [:name, :age, :id] == map(field->field.name, struct.fields)
-    @test [String, Int, Int] == map(field->field.typ, struct.fields)
+    @test [:id, :name, :age] == map(field->field.name, struct.fields)
+    @test [Int, String, Int] == map(field->field.typ, struct.fields)
 end
 
 struct = plain_to_mirrorstruct(User)

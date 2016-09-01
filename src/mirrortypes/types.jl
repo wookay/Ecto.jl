@@ -69,14 +69,14 @@ function plain_to_mirrorstruct(T::Type)::MirrorStruct
     naming = MirrorNaming(Val{:plain}, T)
     names = fieldnames(T)
     fields = Vector{MirrorField}()
+    if !in(:id, names)
+        field = MirrorField(:id, Int, Dict())
+        push!(fields, field)
+    end
     for name in names
         typ = fieldtype(T, name)
         opts = Dict()
         field = MirrorField(name, typ, opts)
-        push!(fields, field)
-    end
-    if !in(:id, names)
-        field = MirrorField(:id, Int, Dict())
         push!(fields, field)
     end
     MirrorStruct(naming, fields)
@@ -87,12 +87,12 @@ function mirror_to_mirrorstruct{MM<:MirrorModel}(mirror::MM)::MirrorStruct
     naming = MirrorNaming(Val{:mirror}, T)
     names = fieldnames(T)
     fields = Vector{MirrorField}()
-    for name in names
-        field = getfield(mirror, name)
-        push!(fields, field)
-    end
     if !in(:id, names)
         field = MirrorField(:id, Int, Dict())
+        push!(fields, field)
+    end
+    for name in names
+        field = getfield(mirror, name)
         push!(fields, field)
     end
     MirrorStruct(naming, fields)
