@@ -3,6 +3,7 @@
 module Schema
 
 export primary_key, schema, field
+import Base: getindex, ==
 
 include("assoc.jl")
 
@@ -13,7 +14,7 @@ type Metadata
     context::Void
 end
 
-type t
+immutable t
     modul::Module
     struct::Assoc
     metadata::Metadata
@@ -22,7 +23,6 @@ type t
         new(modul, struct, metadata)
     end
 end
-
 type PutMeta
     opts::Dict
 end
@@ -31,6 +31,44 @@ type PrimaryKey
     name::Symbol
     typ::Symbol
     opts::Dict{Symbol,Any}
+end
+
+function ==(lhs::Schema.t, rhs::Schema.t)
+    lhs.struct == lhs.struct
+end
+
+function getindex(schema::Schema.t, key::Symbol)
+    if :fields == key
+        get_attribute(schema.modul, :ecto_fields)
+    elseif :associations == key
+        get_attribute(schema.modul, :ecto_assocs)
+    elseif :read_after_writes == key
+        get_attribute(schema.modul, :ecto_fields)
+    elseif :primary_key == key
+        get_attribute(schema.modul, :ecto_primary_keys)
+    elseif :types == key
+        get_attribute(schema.modul, :ecto_fields)
+    end
+# `__schema__(:source)` - Returns the source as given to `schema/2`;
+# `__schema__(:prefix)` - Returns optional prefix for source provided by
+# `@schema_prefix` schema attribute;
+# `__schema__(:primary_key)` - Returns a list of primary key fields (empty if there is none);
+#
+# `__schema__(:fields)` - Returns a list of all non-virtual field names;
+# `__schema__(:type, field)` - Returns the type of the given non-virtual field;
+# `__schema__(:types)` - Returns a map of all non-virtual
+# field names and their type;
+#
+# `__schema__(:associations)` - Returns a list of all association field names;
+# `__schema__(:association, assoc)` - Returns the association reflection of the given assoc;
+#
+# `__schema__(:embeds)` - Returns a list of all embedded field names;
+# `__schema__(:embed, embed)` - Returns the embedding reflection of the given embed;
+#
+# `__schema__(:read_after_writes)` - Non-virtual fields that must be read back
+# from the database after every write (insert or update);
+#
+# `__schema__(:autogenerate_id)` - Primary key that is auto generated on insert;
 end
 
 function primary_key(pk::Bool)
@@ -199,6 +237,7 @@ end
 ## Errors
 type NoPrimaryKeyFieldError
     message
+    NoPrimaryKeyFieldError(schema::Schema.t) = new("schema has no primary key")
 end
 
 type NoPrimaryKeyValueError

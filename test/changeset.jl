@@ -13,4 +13,4 @@ using Ecto
 using Base.Test
 schema = Schema.t(TestChangeset.MySchema, Schema.Assoc())
 changeset = Changeset.change(schema)
-@test TestChangeset.MySchema == changeset.schema.modul
+@test TestChangeset.MySchema == changeset.data.modul

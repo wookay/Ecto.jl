@@ -1,7 +1,7 @@
 using Base.Test
 
-@testset "type.jl" begin
-    include("type.jl")
+@testset "reflection.jl" begin
+    include("reflection.jl")
 end
 
 @testset "mirrortypes/predicates.jl" begin

@@ -8,11 +8,11 @@ import Ecto.Typ: dump, julia_type, elixir_type
     @test (:ok, nothing) == dump(Val{:string}, nothing)
     @test (:ok, "foo") == dump(Val{:string}, "foo")
     @test (:ok, 1) == dump(Val{:integer}, 1)
-    @test :error == dump(Val{:integer}, "10")
+    @test (:error, "10") == dump(Val{:integer}, "10")
     @test (:ok, "foo") == dump(Val{:binary}, "foo")
-    @test :error == dump(Val{:binary}, 1)
+    @test (:error, 1) == dump(Val{:binary}, 1)
     @test (:ok, [1, 2, 3]) == dump(Val{(:array, :integer)}, [1, 2, 3])
-    @test :error == dump(Val{(:array, :integer)}, ["1", "2", "3"])
+    @test (:error, ["1", "2", "3"]) == dump(Val{(:array, :integer)}, ["1", "2", "3"])
     @test (:ok, ["1", "2", "3"]) == dump(Val{(:array, :binary)}, ["1", "2", "3"])
 end
 

@@ -101,6 +101,7 @@ end
 function mirrorstruct_to_schema(struct::MirrorStruct)::Module
     modul = MirrorTypes
     typename = struct.naming.schema
+    isdefined(modul, typename) && return getfield(modul, typename)
     plural = Ecto.English.pluralize(string(struct.naming.plain))
     lines = String[]
     push!(lines, "module $typename")
@@ -119,6 +120,7 @@ end
 function mirrorstruct_to_plain(struct::MirrorStruct)::Type
     modul = MirrorTypes
     typename = struct.naming.plain
+    isdefined(modul, typename) && return getfield(modul, typename)
     lines = String[]
     push!(lines, "type $typename")
     for field in struct.fields
@@ -134,6 +136,7 @@ end
 function mirrorstruct_to_mirror(struct::MirrorStruct)
     modul = MirrorTypes
     typename = struct.naming.mirror
+    isdefined(modul, typename) && return getfield(modul, typename)(struct.fields...)
     lines = String[]
     push!(lines, "type $typename <: Ecto.MirrorTypes.MirrorModel")
     for field in struct.fields

@@ -7,7 +7,7 @@ export Schema, put_meta, rem, |>
 export Changeset
 
 # in query.jl
-export in, from, and, set
+export Query, in, from, and, set
 
 # in repo.jl
 export Repo

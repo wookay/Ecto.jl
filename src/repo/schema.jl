@@ -3,53 +3,162 @@
 module Schema
 
 import ....Ecto
-
-## get
-function get(adapter, modul::Module, id::Any)
-end
-
-get(adapter, modul::Module, id::Void)   = throw(ArgumentError(""))
-get(adapter, modul::Module, id::Symbol) = throw(Ecto.Query.CastError(""))
-get(adapter, modul::Any, id::Symbol)    = throw(Ecto.QueryError(""))
-
-
-## get_by
-function get_by(adapter, modul::Module, opts::Dict)
-end
-
-get_by(adapter, modul::Module, opts::Dict{Symbol,Void})   = throw(ArgumentError(""))
-get_by(adapter, modul::Module, opts::Dict{Symbol,Symbol}) = throw(Ecto.Query.CastError(""))
-get_by(adapter, modul::Any, opts::Dict{Symbol,Symbol})    = throw(Ecto.QueryError(""))
+import ....Ecto: Changeset, InvalidChangesetError
 
 ## insert!
-function insert!(adapter, schema::Ecto.Schema.t, opts::Dict)
-    modul = schema.modul
-    primary_keys = Ecto.Schema.get_attribute(modul, :ecto_primary_keys)
-    isempty(primary_keys) && throw(Ecto.NoPrimaryKeyFieldError(""))
-    changeset_fields = Dict(Ecto.Schema.get_attribute(modul, :changeset_fields))
-    for (k,v) in schema.struct
-        typ = changeset_fields[k]
-        :error == Ecto.Typ.dump(Val{typ}, v) && throw(Ecto.ChangeError(""))
+function insert!(repo::Base.Random.UUID, adapter, struct_or_changeset::Union{Ecto.Schema.t,Changeset.t}, opts::Dict)::Ecto.Schema.t
+    (isok, schema_or_changeset) = insert(repo, adapter, struct_or_changeset, opts)
+    :ok==isok ? schema_or_changeset : throw(Ecto.InvalidChangesetError(:insert, schema_or_changeset))
+end
+
+## update!
+function update!(repo::Base.Random.UUID, adapter, struct_or_changeset::Union{Ecto.Schema.t,Changeset.t}, opts::Dict)
+    (isok, schema_or_changeset) = update(repo, adapter, struct_or_changeset, opts)
+    :ok==isok ? schema_or_changeset : throw(Ecto.InvalidChangesetError(:update, schema_or_changeset))
+end
+
+## insert_or_update!
+function insert_or_update!(repo::Base.Random.UUID, adapter, changeset::Union{Ecto.Schema.t,Changeset.t}, opts::Dict)
+    state = get_state(changeset)
+    if :built == state
+        insert!(repo, adapter, changeset, opts)
+    elseif :loaded == state
+        update!(repo, adapter, changeset, opts)
+    else
+        throw(ArgumentError("the changeset has an invalid state for Repo.insert_or_update!: $state"))
     end
 end
 
-
-## update!
-function update!(adapter, changeset::Ecto.Changeset.t, opts::Dict)
-    schema = changeset.schema
-    modul = schema.modul
-    primary_keys = Ecto.Schema.get_attribute(modul, :ecto_primary_keys)
-    isempty(primary_keys) && throw(Ecto.NoPrimaryKeyFieldError(""))
-    !issubset(primary_keys, keys(schema.struct)) && throw(Ecto.NoPrimaryKeyValueError(""))
+## delete!
+function delete!(repo::Base.Random.UUID, adapter, struct_or_changeset::Union{Ecto.Schema.t,Changeset.t}, opts::Dict)
+    (isok, schema_or_changeset) = delete(repo, adapter, struct_or_changeset, opts)
+    :ok==isok ? schema_or_changeset : throw(Ecto.InvalidChangesetError(:delete, schema_or_changeset))
 end
 
 
-## delete!
-function delete!(adapter, schema::Ecto.Schema.t, opts::Dict)
-    modul = schema.modul
-    primary_keys = Ecto.Schema.get_attribute(modul, :ecto_primary_keys)
-    isempty(primary_keys) && throw(Ecto.NoPrimaryKeyFieldError(""))
-    !issubset(primary_keys, keys(schema.struct)) && throw(Ecto.NoPrimaryKeyValueError(""))
+function insert(repo::Base.Random.UUID, adapter, changeset::Changeset.t, opts::Dict)::Tuple{Symbol,Union{Changeset.t,Ecto.Schema.t}}
+    do_insert(repo, adapter, changeset, opts)
+end
+
+function insert(repo::Base.Random.UUID, adapter, struct::Ecto.Schema.t, opts::Dict)::Tuple{Symbol,Union{Changeset.t,Ecto.Schema.t}}
+    changeset = Ecto.Changeset.change(struct)
+    do_insert(repo, adapter, changeset, opts)
+end
+
+
+function update(repo::Base.Random.UUID, adapter, changeset::Changeset.t, opts::Dict)::Tuple{Symbol,Union{Changeset.t,Ecto.Schema.t}}
+    do_update(repo, adapter, changeset, opts)
+end
+
+function insert_or_update(repo::Base.Random.UUID, adapter, changeset::Changeset.t, opts::Dict)::Tuple{Symbol,Union{Changeset.t,Ecto.Schema.t}}
+    if changeset.valid
+        (:ok, changeset.data)
+    else
+        (:error, changeset)
+    end
+end
+
+function delete(repo::Base.Random.UUID, adapter, changeset::Changeset.t, opts::Dict)::Tuple{Symbol,Union{Changeset.t,Ecto.Schema.t}}
+    do_delete(repo, adapter, changeset, opts)
+end
+
+function delete(repo::Base.Random.UUID, adapter, struct::Ecto.Schema.t, opts::Dict)::Tuple{Symbol,Union{Changeset.t,Ecto.Schema.t}}
+    changeset = Ecto.Changeset.change(struct)
+    do_delete(repo, adapter, changeset, opts)
+end
+
+function do_insert(repo::Base.Random.UUID, adapter, changeset::Changeset.t, opts::Dict)::Tuple{Symbol,Union{Changeset.t,Ecto.Schema.t}}
+    do_action(:insert, repo, adapter, changeset, opts)
+end
+
+function do_update(repo::Base.Random.UUID, adapter, changeset::Changeset.t, opts::Dict)::Tuple{Symbol,Union{Changeset.t,Ecto.Schema.t}}
+    do_action(:upate, repo, adapter, changeset, opts)
+end
+
+function do_delete(repo::Base.Random.UUID, adapter, changeset::Changeset.t, opts::Dict)::Tuple{Symbol,Union{Changeset.t,Ecto.Schema.t}}
+    do_action(:delete, repo, adapter, changeset, opts)
+end
+
+function do_action(action::Symbol, repo::Base.Random.UUID, adapter, changeset::Changeset.t, opts::Dict)::Tuple{Symbol,Union{Changeset.t,Ecto.Schema.t}}
+    prepare = changeset.prepare
+    struct = struct_from_changeset!(action, changeset)
+    schema = struct
+    fields = schema[:fields]
+    assocs = schema[:associations]
+    retur = schema[:read_after_writes]
+    changeset = put_repo_and_action(changeset, action, repo)
+    if changeset.valid
+        metadata = schema.metadata
+        changes = changeset.changes
+        (changes, extra) = autogenerate_id(metadata, changeset.changes, retur, adapter)
+        dump_changes!(action, changes, schema, extra, changeset.types, adapter)
+        if :insert != action
+            filters = add_pk_filter!(changeset.filters, struct)
+        end
+        values = []
+        extra = []
+        autogen = []
+        changeset = load_changes(changeset, :delete==action ? :deleted : :loaded, vcat(values, extra), autogen, adapter)
+        (:ok, changeset.data)
+    else
+        (:error, changeset)
+    end
+end
+
+function load_changes(changeset, state, values, autogen, adapter)::Changeset.t
+    types = changeset.types
+    changes = changeset.changes
+    schema = changeset.data
+    changeset.data = schema
+    changeset
+end
+
+function put_repo_and_action(changeset::Changeset.t, action::Symbol, repo::Base.Random.UUID)::Changeset.t
+     changeset.action = action
+     changeset.repo = repo
+     changeset.types = changeset.data[:types]
+     changeset.changes = changeset.data.struct
+     changeset
+end
+
+function struct_from_changeset!(action, changeset::Changeset.t)::Ecto.Schema.t
+    isa(changeset.data, Void) && throw(ArgumentError("cannot $action a changeset without :data"))
+    changeset.data
+end
+
+function dump_field!(action::Symbol, schema::Ecto.Schema.t, field::Symbol, typ, value, adapter)
+    (isok, value) = Ecto.Typ.adapter_dump(adapter, typ, value)
+    if :ok == isok
+        (field, value)
+    else
+        throw(Ecto.ChangeError("value $value for $field in $action does not match type $typ"))
+    end
+end
+
+function dump_fields!(action::Symbol, schema::Ecto.Schema.t, kw::Ecto.Assoc, types, adapter)
+    typedict = Dict(types)
+    for (field, value) in kw
+        typ = typedict[field]
+        dump_field!(action, schema, field, typ, value, adapter)
+    end
+end
+
+function dump_changes!(action, changes, schema, extra, types, adapter)
+    dumped = []
+    autogen = []
+    dump_fields!(action, schema, changes, types, adapter)
+    (dumped, autogen)
+end
+
+function autogenerate_id(metadata, changes, retur, adapter)
+    (changes, [], retur)
+end
+
+get_state(changeset::Changeset.t)::Symbol = changeset.data.metadata.state
+
+function add_pk_filter!(filters, schema::Ecto.Schema.t)
+    pks = Changeset.Relation.primary_keys!(schema)
+    !issubset(pks, keys(schema.struct)) && throw(Ecto.NoPrimaryKeyValueError(""))
 end
 
 end # module Ecto.Repo.Schema

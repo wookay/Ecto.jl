@@ -1,6 +1,6 @@
 module TestQuery
 
-module MySchema
+module MyQuerySchema
 using Ecto.Schema
 schema("my") do
     field(:name, :string)
@@ -13,7 +13,6 @@ end # module TestQuery
 
 using Ecto
 using Base.Test
-mirror = in(TestQuery.MySchema)
-@test isa(mirror, Ecto.MirrorTypes._My)
+mirror = in(TestQuery.MyQuerySchema)
 @test isa(mirror.name, Ecto.MirrorTypes.MirrorField)
 @test isa(mirror.age, Ecto.MirrorTypes.MirrorField)

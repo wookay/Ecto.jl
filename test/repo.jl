@@ -1,3 +1,5 @@
+# tests from ecto/test/ecto/repo_test.exs
+
 module MySchema
 using Ecto.Schema
 schema("my_schema") do
@@ -19,6 +21,7 @@ using Ecto
 TestRepo = Ecto.Repo.t()
 
 using Base.Test
+
 @testset "needs schema with primary key field" begin
     schema = %(MySchemaNoPK, x= "abc")
     @test isa(schema, Schema.t)
@@ -73,15 +76,68 @@ end
 end
 
 @testset "validates update_all" begin
-    TestRepo.update_all(MySchema, [set [:x "321"]])
+    TestRepo.update_all(MySchema, set= [:x "321"])
 
-#    e = in(MySchema)
-#    query = from(e, where= e.x == "123", update= [set [:x "321"]])
+    e = in(MySchema)
+    query = from(e, where= e.x == "123", update= [set [:x "321"]])
+    @test isa(query, Query.t)
+    TestRepo.update_all(query, [])
 
-#    TestRepo.update_all(query, [])
-#
-#    @test_throws ArgumentError TestRepo.update_all(MySchema, [set [:x "321"]], returning= [])
-#
-#    @test_throws Ecto.QueryError TestRepo.update_all(from(e, select= e), set= [:x "321"])
-#    @test_throws Ecto.QueryError TestRepo.update_all(from(e, order_by= e.x), set= [:x "321"])
+    @test_throws ArgumentError TestRepo.update_all(MySchema, [set [:x "321"]], returning= [])
+    @test_throws Ecto.QueryError TestRepo.update_all(from(e, select= e), set= [:x "321"])
+    @test_throws Ecto.QueryError TestRepo.update_all(from(e, order_by= e.x), set= [:x "321"])
+end
+
+@testset "validates delete_all" begin
+    TestRepo.delete_all(MySchema)
+
+    e = in(MySchema)
+    query = from(e, where= e.x == "123")
+    TestRepo.delete_all(query)
+
+    @test_throws ArgumentError TestRepo.delete_all(MySchema, returning= [])
+    @test_throws Ecto.QueryError TestRepo.delete_all(from(e, select= e))
+    @test_throws Ecto.QueryError TestRepo.delete_all(from(e, order_by= e.x))
+end
+
+## Changesets
+@testset "insert, update, insert_or_update and delete accepts changesets" begin
+    valid = Ecto.Changeset.cast(%(MySchema, id= 1), Dict(), [])
+    @test (:ok, %(MySchema)) == TestRepo.insert(valid)
+    @test (:ok, %(MySchema)) == TestRepo.update(valid)
+    @test (:ok, %(MySchema)) == TestRepo.insert_or_update(valid)
+    @test (:ok, %(MySchema)) == TestRepo.delete(valid)
+end
+
+@testset "insert, update, insert_or_update and delete errors on invalid changeset" begin
+    invalid = %(Ecto.Changeset.t, valid= false, data= %(MySchema))
+
+    insert = %(invalid, action= :insert, repo= TestRepo.repo)
+    @test (:error, insert) == TestRepo.insert(invalid)
+
+    update = %(invalid, action= :update, repo= TestRepo.repo)
+    @test (:error, update) == TestRepo.update(invalid)
+
+    update = %(invalid, action= :insert, repo= TestRepo.repo)
+    @test (:error, update) == TestRepo.insert_or_update(invalid)
+
+    delete = %(invalid, action= :delete, repo= TestRepo.repo)
+    @test (:error, delete) == TestRepo.delete(invalid)
+end
+
+@testset "insert!, update!, insert_or_update! and delete! fail on invalid changeset" begin
+    invalid = %(Ecto.Changeset.t, valid= false, data= %(MySchema))
+
+    @test_throws Ecto.InvalidChangesetError TestRepo.insert!(invalid)
+    @test_throws Ecto.InvalidChangesetError TestRepo.update!(invalid)
+    @test_throws Ecto.InvalidChangesetError TestRepo.insert_or_update!(invalid)
+    @test_throws Ecto.InvalidChangesetError TestRepo.delete!(invalid)
+end
+
+@testset "insert!, update! and delete! fail on changeset without data" begin
+    invalid = %(Ecto.Changeset.t, valid= true, data= nothing)
+
+    @test_throws ArgumentError TestRepo.insert!(invalid)
+    @test_throws ArgumentError TestRepo.update!(invalid)
+    @test_throws ArgumentError TestRepo.delete!(invalid)
 end
