@@ -211,15 +211,22 @@ end # module Ecto.Schema
 
 
 import Base: rem, |>
+import .MirrorTypes: plain_to_mirrorstruct, mirrorstruct_to_schema
 
 function rem(modul::Module; vec...)::Schema.t
     Schema.t(modul, Schema.Assoc(vec))
 end
 
-function |>(schema::Schema.t, func::Function; kw...)
-    if Changeset.change == func
-        Changeset.t(schema)
-    end
+function rem(typ::Type; kw...)::Schema.t
+    data = nothing
+    mirror = plain_to_mirrorstruct(typ)
+    modul = mirrorstruct_to_schema(mirror)
+    struct = Assoc(kw)
+    Schema.t(modul, struct)
+end
+
+function |>(schema::Schema.t, func::Function, args...; kw...)
+    func(schema, args...; kw...)
 end
 
 function |>(schema::Schema.t, meta::Schema.PutMeta)::Schema.t

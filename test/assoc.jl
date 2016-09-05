@@ -23,3 +23,8 @@ vector = Assoc(Vector([(:join, 0), (:where, 1), (:where, 2)]))
 @test [1, 2] == [v for (k,v) in vector if :where==k]
 @test [] == [v for (k,v) in vector if :locker==k]
 @test haskey(vector, :where)
+
+l = Assoc([(:author,"bar")])
+r = Assoc([(:title,"title")])
+@test r == Assoc([(:title,"title")])
+@test Assoc([(:title,"title")]) == setdiff(r, l)

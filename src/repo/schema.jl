@@ -72,7 +72,7 @@ function do_insert(repo::Base.Random.UUID, adapter, changeset::Changeset.t, opts
 end
 
 function do_update(repo::Base.Random.UUID, adapter, changeset::Changeset.t, opts::Dict)::Tuple{Symbol,Union{Changeset.t,Ecto.Schema.t}}
-    do_action(:upate, repo, adapter, changeset, opts)
+    do_action(:update, repo, adapter, changeset, opts)
 end
 
 function do_delete(repo::Base.Random.UUID, adapter, changeset::Changeset.t, opts::Dict)::Tuple{Symbol,Union{Changeset.t,Ecto.Schema.t}}
@@ -80,6 +80,7 @@ function do_delete(repo::Base.Random.UUID, adapter, changeset::Changeset.t, opts
 end
 
 function do_action(action::Symbol, repo::Base.Random.UUID, adapter, changeset::Changeset.t, opts::Dict)::Tuple{Symbol,Union{Changeset.t,Ecto.Schema.t}}
+    !(changeset.action in [nothing, :insert, :update, :delete, :replace]) && throw(ArgumentError("a changeset with action $(changeset.action) was given to $action"))
     prepare = changeset.prepare
     struct = struct_from_changeset!(action, changeset)
     schema = struct

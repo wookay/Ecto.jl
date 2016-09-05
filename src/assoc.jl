@@ -2,7 +2,7 @@
 
 type Assoc
     vector::Vector{Tuple{Symbol,Any}}
-    Assoc() = new(Vector{Tuple{Symbol,Any}}())
+    Assoc(; kw...) = new(Vector(kw))
     Assoc(vector) = new(vector)
 end
 
@@ -22,3 +22,11 @@ Base.haskey(assoc::Assoc, key::Symbol) = key in keys(assoc)
 Base.start(assoc::Assoc) = start(assoc.vector)
 Base.next(assoc::Assoc, i::Int) = next(assoc.vector, i)
 Base.done(assoc::Assoc, i::Int) = done(assoc.vector, i)
+
+function ==(lhs::Assoc, rhs::Assoc)
+    ==(lhs.vector, rhs.vector)
+end
+
+function Base.setdiff(lhs::Assoc, rhs::Assoc)::Assoc
+    Assoc(setdiff(lhs.vector, rhs.vector))
+end

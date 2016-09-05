@@ -1,16 +1,21 @@
 module TestChangeset
-
-module MySchema
-using Ecto.Schema
-schema("my") do
+type Post
+    title::String
+    author::String
 end
-end
-
 end # module TestChangeset
 
 
-using Ecto
+import Ecto
+import Ecto: Changeset
+import Ecto.Changeset: change
+import Ecto.Schema: Assoc
 using Base.Test
-schema = Schema.t(TestChangeset.MySchema, Schema.Assoc())
-changeset = Changeset.change(schema)
-@test TestChangeset.MySchema == changeset.data.modul
+
+post = %(TestChangeset.Post, author= "bar")
+@test isa(post, Ecto.Schema.t)
+changeset = change(post, title= "title")
+@test Assoc([(:title, "title")]) == changeset.changes
+
+changeset = change(%(TestChangeset.Post, title= "title"), title= "title")
+@test Assoc([]) == changeset.changes

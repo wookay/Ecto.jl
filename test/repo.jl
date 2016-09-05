@@ -141,3 +141,26 @@ end
     @test_throws ArgumentError TestRepo.update!(invalid)
     @test_throws ArgumentError TestRepo.delete!(invalid)
 end
+
+@testset "insert!, update!, insert_or_update! and delete! fail on changeset with wrong action" begin
+    invalid = %(Ecto.Changeset.t, valid= true, data= %(MySchema), action= :other)
+
+    @test_throws ArgumentError TestRepo.insert!(invalid)
+    @test_throws ArgumentError TestRepo.update!(invalid)
+    @test_throws ArgumentError TestRepo.insert_or_update!(invalid)
+    @test_throws ArgumentError TestRepo.delete!(invalid)
+end
+
+@testset "insert_or_update uses the correct action" begin
+    built  = Ecto.Changeset.cast(%(MySchema, y= "built"), Dict(), [])
+    @test isa(built, Ecto.Changeset.t)
+    loaded =
+        %(MySchema, y= "loaded") |> TestRepo.insert! |> Ecto.Changeset.cast(Schema.Assoc(y= "updated"), [:y])
+    #:insert
+
+    TestRepo.insert_or_update(built)
+    #:insert
+
+    TestRepo.insert_or_update(loaded)
+    #:update
+end

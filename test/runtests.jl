@@ -16,6 +16,10 @@ end
     include("assoc.jl")
 end
 
+@testset "schema.jl" begin
+    include("schema.jl")
+end
+
 @testset "changeset.jl" begin
     include("changeset.jl")
 end
